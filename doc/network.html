@@ -1,0 +1,35 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="UTF-8">		  
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Breakthrough - Network Protocols</title>
+<body>
+<h1>Network Protocols</h1>
+
+<h2>Request</h2>
+<p>The network player will send the following as querystring params in a GET request:<br/>
+
+&emsp;- <b>id</b> (which is currently set to the initial timestamp when the GUI is loaded)<br/>
+&emsp;- <b>board</b> - serialized board string with 65 characters as follows<br/>
+&emsp;[pins - 64 chars] - EMPTY=0, PLAYER1=1, PLAYER2=2<br/>
+&emsp;[turn - 1 char] - PLAYER1=1, PLAYER2=2<br/>
+
+</p>
+<p>Example: ?id=1515560070582&board=11111111111111110000000000000000000000000000000022222222222222221</p>
+
+<h2>Response</h2>
+<p>The GUI will expect to receive a JSON object with the following:<br/>
+&emsp;- <b>move</b>: A Breakthrough move notation string.  For example A7A6, or  h2-h3 (dash optional)<br/>
+&emsp;- <b>board</b>: (optional) A serialized board string which can be used as a sanity check that the move matches the expected state.  It may also be used just by itself with out needing to specify a <b>move</b>.<br/>
+&emsp;- <b>log</b>: (optional) A message to send to console.log()<br/>
+&emsp;- <b>alert</b>: (optional) A message to alert<br/>
+</p>
+<p><a href="/breakthrough/test/network.json">Example</a></p>
+
+<h2>Notes</h2>
+- The board is serialized starting from the <b>BOTTOM-LEFT</b>, so the first character in the string will be A1, and the last will be H8<br/>
+- For other domains add "Access-Control-Allow-Origin: *" to the header<br/>
+</body>
+</html>

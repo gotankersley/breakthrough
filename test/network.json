@@ -1,0 +1,5 @@
+{
+	"move": "A7A6",	
+	"alert": "this will be alerted",
+	"log": "this message will be sent to the console"
+}

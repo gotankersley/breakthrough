@@ -1,0 +1,289 @@
+<!DOCYTYPE html>
+<html>
+<head>
+<title>Bit tool</title>
+<script src="//code.jquery.com/jquery-2.2.0.min.js"></script>
+<script src="../js/lib/bit-lib.js"></script>
+<style>
+	
+	#board { border-collapse:collapse; }	
+	td {text-align:center; width: 100px; border: 1px solid black}	
+	td:hover {background-color: #9cf;}
+	td.active {background-color: #f00; }
+</style>
+</head>
+<body>
+
+<!-- Board -->
+<table id="board" border="0" width="700" height="700">
+<tr id="r0" data-row="0">  <!-- Row 0 -->  
+    <td>0</td>       
+ 	<td>1</td>
+    <td>2</td>
+    <td>3</td>
+    <td>4</td>	    
+    <td>5</td>
+    <td>6</td>
+    <td>7</td>      
+</tr>    
+<tr id="r1" data-row="1">  <!-- Row 1 -->   
+	<td>8</td>
+    <td>9</td>
+    <td>10</td>
+    <td>11</td>	    
+    <td>12</td>
+    <td>13</td>
+    <td>14</td>
+    <td>15</td>   
+</tr> 
+<tr id="r2" data-row="2">  <!-- Row 2 --> 
+	<td>16</td>
+    <td>17</td>
+    <td>18</td>
+    <td>19</td>	    
+    <td>20</td>
+    <td>21</td>
+    <td>22</td>
+    <td>23</td>     	
+</tr> 
+<tr id="r3" data-row="3">  <!-- Row 3 -->    
+	<td>24</td>
+    <td>25</td>
+    <td>26</td>
+    <td>27</td>	    
+    <td>28</td>
+    <td>29</td>
+    <td>30</td>
+    <td>31</td>        
+</tr> 
+<tr id="r4" data-row="4">  <!-- Row 4 -->
+	<td>32</td>
+    <td>33</td>
+    <td>34</td>
+    <td>35</td>	    
+    <td>36</td>
+    <td>37</td>
+    <td>38</td>
+    <td>39</td>    
+	    
+</tr> 
+<tr id="r5" data-row="5">  <!-- Row 5 -->    
+    <td>40</td>
+    <td>41</td>
+    <td>42</td>
+    <td>43</td>	    
+    <td>44</td>
+    <td>45</td>
+    <td>46</td>
+    <td>47</td>      
+</tr> 
+<tr id="r6" data-row="6">  <!-- Row 6 -->    
+	<td>48</td>
+	<td>49</td>
+	<td>50</td>
+	<td>51</td>	    
+	<td>52</td>
+	<td>53</td>
+	<td>54</td>
+	<td>55</td>   
+</tr> 
+<tr id="r7" data-row="7">  <!-- Row 7 -->    
+<td>56</td>
+    <td>57</td>
+    <td>58</td>
+    <td>59</td>	    
+    <td>60</td>
+    <td>61</td>
+    <td>62</td>
+    <td>63</td>
+</tr> 
+ 
+</table>
+
+<!-- Conversion tools -->
+<div id="tools">
+<input type="text" id="inputBoard" size="60"/>
+<button onclick="setBoard();">Set</button>
+<button onclick="resetBoard();">Reset</button><br/>
+Binary: <span id="outBin"></span><br/>
+Hex: <span id="outHex"></span><br/>
+</div>
+<script>
+var BOARD_SPACES = 64;
+
+
+$(function() {
+	$('#inputBoard').keyup(onKeyUp); 
+	$('td').click(function() {		
+		var pos = $(this).text();		
+		$(this).toggleClass('active');	
+		calculate();
+	});
+	var bb = null;
+	if (bb) {
+		$('#inputBoard').val(bb);
+		setBoard();
+	}
+});
+
+function onKeyUp(e) {
+    if (e.keyCode == 13) setBoard(); //Enter        
+}
+
+function setBoard() {
+    $('.active').removeClass('active');
+    var input = $("#inputBoard").val();
+    var bitStr;
+    
+    //Don't need to convert if already binary
+    if (input.length == BOARD_SPACES) bitStr = input;
+    else //Either decimal or hex
+    {		
+		input = input.toLowerCase();
+		if (input.indexOf('0x') === 0) { //Hex
+			input = input.substr(2); //Remove initial '0x'
+		}
+		else { //Dec - convert to Hex
+			input = convertBase(input, 10, 16);
+		}
+				
+		
+		//Convert to Binary
+		bitStr = hexToBin(input);
+		bitStr = padStr(bitStr, BOARD_SPACES);  
+    }
+    
+    $('td').each(function(){ 
+        var pos = $(this).html();
+        if (bitStr.charAt(BOARD_SPACES - pos - 1) == '1') $(this).addClass('active');
+    });
+    calculate();  
+}
+
+function resetBoard() {
+    $('.active').removeClass('active');
+    $('#inputBoard').html();
+    calculate();
+}
+
+//Conversion functions
+function calculate() {    
+    var bitStr = padStr('', BOARD_SPACES);
+    $('td.active').each(function(){    
+        var pos = $(this).html();
+        bitStr = setChar(bitStr, (BOARD_SPACES - pos - 1), 1);
+    });
+    $('#outBin').html(bitStr);
+    $('#outHex').html(toHex(bitStr, BOARD_SPACES));
+}
+
+//Util
+function padStr(str, length) {
+    while (str.length < length) {
+        str = '0' + str;
+    }
+    return str;
+}
+
+
+function setChar(str, index, val) { //Take that - immutable strings...
+    return str.substr(0, index) + val + str.substr(index + 1);
+}
+
+var BITS_PER_BYTE = 4;
+function toHex(bitStr, length) {
+    //Convert to hex 4 bits at a time
+    var hex = '';
+    for (var i = 0; i < bitStr.length; i+= BITS_PER_BYTE) {
+        var bits = parseInt(bitStr.substr(i, BITS_PER_BYTE), 2);
+        hex += bits.toString(16);        
+    }    
+	
+	for (var i = 0; i < hex.length; i++) {
+		if (hex.charAt(i) != 0) return '0x' + hex.substr(i);
+	}
+	
+	return '0x' + hex;
+}
+
+function hexToBin(hexStr) {
+	//Zero-pad hex string
+	hexStr = padStr(hexStr, 16);
+	
+	var binStr = '';
+	for(var i = 0; i < hexStr.length; i++){
+		binStr += padStr(parseInt(hexStr[i], 16).toString(2), BITS_PER_BYTE);
+	}
+
+	return binStr;
+}
+
+//Large dec to hex converter: http://www.danvk.org/hex2dec.html
+function parseToDigitsArray(str, base) {
+  var digits = str.split('');
+  var ary = [];
+  for (var i = digits.length - 1; i >= 0; i--) {
+    var n = parseInt(digits[i], base);
+    if (isNaN(n)) return null;
+    ary.push(n);
+  }
+  return ary;
+}
+
+function multiplyByNumber(num, x, base) {
+  if (num < 0) return null;
+  if (num == 0) return [];
+
+  var result = [];
+  var power = x;
+  while (true) {
+    if (num & 1) {
+      result = add(result, power, base);
+    }
+    num = num >> 1;
+    if (num === 0) break;
+    power = add(power, power, base);
+  }
+
+  return result;
+}
+
+function add(x, y, base) {
+  var z = [];
+  var n = Math.max(x.length, y.length);
+  var carry = 0;
+  var i = 0;
+  while (i < n || carry) {
+    var xi = i < x.length ? x[i] : 0;
+    var yi = i < y.length ? y[i] : 0;
+    var zi = carry + xi + yi;
+    z.push(zi % base);
+    carry = Math.floor(zi / base);
+    i++;
+  }
+  return z;
+}
+
+function convertBase(str, fromBase, toBase) {
+  var digits = parseToDigitsArray(str, fromBase);
+  if (digits === null) return null;
+
+  var outArray = [];
+  var power = [1];
+  for (var i = 0; i < digits.length; i++) {
+    // invariant: at this point, fromBase^i = power
+    if (digits[i]) {
+      outArray = add(outArray, multiplyByNumber(digits[i], power, toBase), toBase);
+    }
+    power = multiplyByNumber(fromBase, power, toBase);
+  }
+
+  var out = '';
+  for (var i = outArray.length - 1; i >= 0; i--) {
+    out += outArray[i].toString(toBase);
+  }
+  return out;
+}
+</script>
+</body>
+</html>

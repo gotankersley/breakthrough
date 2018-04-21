@@ -1,0 +1,123 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="UTF-8">		  
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Breakthrough</title>
+<link rel="shortcut icon" href="img/favicon.ico" />	
+<link rel="stylesheet" href="css/gui.css"/>
+
+<script src="js/lib/dat.gui.min.js"></script>
+<script src="js/lib/tween.js"></script>
+<script src="js/lib/draw-lib.js"></script>
+<script src="js/lib/url-lib.js"></script>
+<script src="js/lib/bit-lib.js"></script>
+<script src="js/lib/rand-lib.js"></script>
+
+<script src="js/core/bit-data.js"></script>
+<script src="js/core/bitboard.js"></script>
+<script src="js/core/board.js"></script>
+<script src="js/core/game.js"></script>
+
+<script src="js/players/random.js"></script>
+<script src="js/players/heuristic.js"></script>
+<script src="js/players/network.js"></script>
+<script src="js/players/montecarlo.js"></script>
+<script src="js/players/alphabeta.js"></script>
+<script src="js/players/iterative-deepening.js"></script>
+
+<script src="js/ui/menu.js"></script>
+<script src="js/ui/stage.js"></script>
+</head>
+<body>
+<canvas id="mainCanvas" width="700" height="700"></canvas>
+<div id="message"></div>
+<script>
+	var menu;
+	Url.init(function(e) {
+		var hash = window.location.hash.replace('#', '');		
+		if (hash.length == BOARD_SPACES + 1) {
+			var newBoard = new Board(hash);			
+			game.updateBoard(newBoard);
+		}
+	});
+	
+	var boardStr;
+	if (performance.navigation.type == 0) { //First time on this page
+		var hash = window.location.hash.replace('#', '');
+		if (hash.length == BOARD_SPACES + 1) boardStr = hash;		
+		else Url.setHash(''); //Clear state
+	}
+	else Url.setHash('');  //Refresh - clear state
+	
+	var game = new Game(boardStr);	
+	Stage.init(game); 
+	
+	
+	//Load TRW's
+	const ROLE_ATTACKER = 0;
+	const ROLE_DEFENDER = 1;
+	const CHECKSUM_WINS_BY_ROLE = [15642155, 13406695];
+	const CHECKSUM_LOSES_BY_ROLE = [1135061, 3370521];
+	const MAX_TRW_SIZE = 1<<24;
+	var TRWS_BY_ROLE = [new Array(MAX_TRW_SIZE), new Array(MAX_TRW_SIZE)];
+	
+	loadTrws(ROLE_ATTACKER, '/breakthrough/data/trws-attacker-turn.dat');
+	loadTrws(ROLE_DEFENDER, '/breakthrough/data/trws-defender-turn.dat');
+	
+	function loadTrws(role, trwsUrl) {	
+		const BUF_SIZE = 524288;
+		const MAX_DEFENSE_SIZE = 65536;
+		
+		var xhr = new XMLHttpRequest();
+		xhr.open('GET', trwsUrl, true);
+
+		xhr.responseType = 'arraybuffer';
+		xhr.onload = function(e) {
+			if (this.status == 200) {
+				//Expand			
+				var attackPos = 0;
+				var defensePos = 0;
+
+				var buf = new Uint32Array(this.response);
+				var winCount = 0;				
+				for (var b = 0; b < BUF_SIZE; b++) {
+					
+					for (var i = 0; i < 32; i++) {
+						var trwIndex = ((attackPos << 16) | defensePos);					
+						var isAttackerWin;
+						
+						if (buf[b] & Math.pow(2, i)) {
+							TRWS_BY_ROLE[role][trwIndex] = true;
+							winCount++;
+						}
+						else TRWS_BY_ROLE[role][trwIndex] = false;						 			
+						
+						defensePos++;
+						if (defensePos == MAX_DEFENSE_SIZE) {
+							defensePos = 0;
+							attackPos++;
+						}				
+					}
+				}
+				var loseCount = MAX_TRW_SIZE - winCount;
+				
+				//Verify checksum
+				if (winCount == CHECKSUM_WINS_BY_ROLE[role]) {
+					if (loseCount == CHECKSUM_LOSES_BY_ROLE[role]) {} //console.log(trwsUrl + ' loaded successfully');
+					else alert('Checksum error for loses in ' + trwsUrl + ': expected(' + CHECKSUM_LOSES_BY_ROLE[role] + '), actual(' + loseCount + ')');
+				}
+				else alert('Checksum error for wins in ' + trwsUrl + ': expected(' + CHECKSUM_WINS_BY_ROLE[role] + '), actual(' + winCount + ')');
+			}
+			else alert('Error loading TRW\'s: ' + trwsUrl);
+		};
+
+		xhr.send();
+	}
+	
+		
+</script>
+<link rel="stylesheet" href="css/dat-gui-light.css"/><!-- needs to be last -->
+</body>
+</html>

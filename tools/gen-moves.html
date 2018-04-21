@@ -1,0 +1,85 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="UTF-8">		  
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Breakthrough - Generate Moves</title>
+<link rel="shortcut icon" href="img/favicon.ico" />	
+
+<script src="/breakthrough/js/core/array-board.js"></script>
+<body>
+<script>
+
+var board = new Board();
+
+var m = new Array(BOARD_SPACES);;
+for (var r = 0; r < BOARD_SPACES; r++) {
+	for (var c = 0; c < BOARD_SIZE; c++) {		
+					
+		var dr = r+1;
+		var straights = [];
+		var bitStr = padStr('', BOARD_SPACES);
+		if (board.onBoard(dr, c)) {
+			var dc = c;
+			var sp = ((BOARD_SIZE_MINUS_1 - r)*BOARD_SIZE)+c;
+			var dp = ((BOARD_SIZE_MINUS_1 - dr)*BOARD_SIZE)+dc;
+			
+			bitStr = setChar(bitStr, (BOARD_SPACES - dp - 1), 1);
+			var hex = toHex(bitStr, BOARD_SPACES);
+			m[sp] = hex;
+		}
+		if (board.onBoard(dr, c+1)) {
+			var dc = c+1;
+			var sp = ((BOARD_SIZE_MINUS_1 - r)*BOARD_SIZE)+c;
+			var dp = ((BOARD_SIZE_MINUS_1 - dr)*BOARD_SIZE)+dc;
+			
+			bitStr = setChar(bitStr, (BOARD_SPACES - dp - 1), 1);
+			var hex = toHex(bitStr, BOARD_SPACES);
+			m[sp] = hex;
+		}
+		if (board.onBoard(dr, c-1)) {
+			var dc = c-1;
+			var sp = ((BOARD_SIZE_MINUS_1 - r)*BOARD_SIZE)+c;
+			var dp = ((BOARD_SIZE_MINUS_1 - dr)*BOARD_SIZE)+dc;			
+			bitStr = setChar(bitStr, (BOARD_SPACES - dp - 1), 1);
+			var hex = toHex(bitStr, BOARD_SPACES);
+			m[sp] = hex;
+		}
+	}
+}
+
+for (var i = 0; i < BOARD_SPACES; i++) {
+	console.log(i, m[i]);
+}
+//Util
+function padStr(str, length) {
+    while (str.length < length) {
+        str = '0' + str;
+    }
+    return str;
+}
+
+
+function setChar(str, index, val) { //Take that - immutable strings...
+    return str.substr(0, index) + val + str.substr(index + 1);
+}
+
+var BITS_PER_BYTE = 4;
+function toHex(bitStr, length) {
+    //Convert to hex 4 bits at a time
+    var hex = '';
+    for (var i = 0; i < bitStr.length; i+= BITS_PER_BYTE) {
+        var bits = parseInt(bitStr.substr(i, BITS_PER_BYTE), 2);
+        hex += bits.toString(16);        
+    }    
+	var hexStr = '0x';	
+	for (var i = 0; i < hex.length; i++) {
+		if (hex.charAt(i) != 0) return '0x' + padStr(hex.substr(i), 16);
+	}
+	
+	return '0x' + padStr(hex, 16);
+}
+</script>
+</body>
+</html>
